@@ -44,6 +44,16 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     notFoundString += "\r\n"
     notFoundString += notFoundBody
     
+    forbiddenBody = "<h2>HOW DARE YOU</h2>\r\n"
+    forbiddenBody += "You asked for a document THAT YOU HAVE ABSOLUTELY NO RIGHT TO LOOK AT! BEGONE!\r\n"
+    forbiddenBody += "</body></html>"  
+    forbiddenString = "HTTP/1.1 403 Forbidden\r\n" 
+    forbiddenString += "Date: %s\r\n"% datetime.datetime.now()		
+    forbiddenString += "Content-Type: text/html\r\n"
+    forbiddenString += "Content-Length: %d\r\n" % len(forbiddenBody)
+    forbiddenString += "\r\n"
+    forbiddenString += forbiddenBody    
+    
     def handle(self):
         self.requestString = self.request.recv(1024).strip()
         self.data = self.requestString.split("\r\n")
@@ -82,6 +92,14 @@ class MyWebServer(SocketServer.BaseRequestHandler):
             else:
                 return self.NotFound(target)
     def findFile(self,target):
+        absPath = os.path.abspath(self.pathStart)
+        absSize = len(absPath)
+        if (len(os.path.abspath(self.pathStart+target)) < absSize):
+            self.request.sendall(self.notFoundString)
+            return 1
+        if (os.path.abspath(self.pathStart+target)[0:absSize] != absPath):
+            self.request.sendall(self.notFoundString)
+            return 1            
         if (os.path.isfile(self.pathStart+target)):
             theType = target.split(".")[1].strip()
             
